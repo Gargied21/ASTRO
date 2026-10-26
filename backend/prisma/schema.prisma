@@ -1,0 +1,329 @@
+// Prisma Schema for Chaitanya Ved Pratishthan (ASTRO)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String    @id @default(cuid())
+  phone        String    @unique
+  name         String
+  email        String?
+  role         String    @default("DEVOTEE") // "DEVOTEE", "ACHARYA", "ADMIN"
+  code         String    @unique // e.g. "#CVP-7829"
+  gotra        String    @default("भारद्वाज (काश्यप प्रवर)")
+  nakshatra    String    @default("रोहिणी")
+  charan       String    @default("२")
+  rashi        String    @default("वृषभ (स्वामी: शुक्र)")
+  address      String?
+  dob          String?
+  tob          String?
+  pob          String?
+  kuladaivat   String?
+  panNumber    String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  familyMembers FamilyMember[]
+  settings      DevoteeSettings?
+  appointments  Appointment[]
+  donations     Donation[]
+  rituals       Ritual[]
+  consultations AstrologyConsultation[]
+  questions     AstrologyQuestion[]
+  submissions   GurukulSubmission[]
+  notifications Notification[]
+}
+
+model FamilyMember {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String
+  relation  String
+  nakshatra String
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+model DevoteeSettings {
+  id                String   @id @default(cuid())
+  userId            String   @unique
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  language          String   @default("mr")
+  whatsappAlerts    Boolean  @default(true)
+  emailDigest       Boolean  @default(true)
+  panchangReminders Boolean  @default(true)
+  updatedAt         DateTime @updatedAt
+}
+
+model Appointment {
+  id               String   @id // e.g. "CVP-2025-0841"
+  userId           String?
+  user             User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  name             String
+  phone            String
+  email            String?
+  serviceDomain    String   // "jyotish", "pooja", "vastu"
+  serviceName      String
+  consultationMode String   // "online", "ashram"
+  slotDate         String
+  slotTime         String
+  status           String   @default("confirmed") // "pending", "confirmed", "completed", "cancelled"
+  birthDate        String?
+  birthTime        String?
+  birthPlace       String?
+  notes            String?
+  whatsappOptIn    Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model Donation {
+  id         String   @id @default(cuid())
+  receiptNo  String   @unique // e.g. "#CVP-2025-0842"
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  donorName  String
+  donorPhone String
+  donorPan   String?
+  category   String   // "anushthan", "gurukul", "goseva", "library", "general"
+  purpose    String
+  purposeMr  String
+  purposeHi  String?
+  purposeGu  String?
+  amount     Float
+  mode       String   @default("Razorpay UPI")
+  status     String   @default("८०-जी जारी (Verified)")
+  fy         String   @default("2024-25")
+  date       String
+  dateIso    String
+  createdAt  DateTime @default(now())
+
+  @@index([userId, fy])
+}
+
+model Ritual {
+  id                  String   @id @default(cuid())
+  userId              String?
+  user                User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  title               String
+  titleMr             String
+  type                String
+  status              String   // "active", "upcoming", "completed"
+  statusLabel         String
+  dayProgress         String?
+  japaCompleted       Int?     @default(0)
+  japaTotal           Int?     @default(100000)
+  chiefHotri          String
+  assistantPandits    String
+  sankalpaIntent      String
+  todaySession        String
+  liveStreamAvailable Boolean  @default(false)
+  trackingNumber      String?
+  trackingStatus      String?
+  trackingStepsJson   String?  // JSON array of {label, date, done}
+  date                String
+  amount              Float
+  recordingDuration   String?
+  shlokaBlessing      String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@index([userId, status])
+  @@index([trackingNumber])
+}
+
+model AstrologyConsultation {
+  id           String              @id // e.g. "#JY-8821"
+  userId       String
+  user         User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  acharyName   String
+  acharyaTitle String
+  experience   String
+  date         String
+  time         String
+  duration     String
+  mode         String
+  location     String
+  status       String              @default("confirmed") // "confirmed", "pending", "completed"
+  subject      String
+  createdAt    DateTime            @default(now())
+  questions    AstrologyQuestion[]
+
+  @@index([userId])
+}
+
+model AstrologyQuestion {
+  id             String                 @id @default(cuid())
+  userId         String
+  user           User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  consultationId String?
+  consultation   AstrologyConsultation? @relation(fields: [consultationId], references: [id], onDelete: SetNull)
+  category       String
+  question       String
+  status         String                 @default("Reviewed by Shastriji")
+  refBhav        String
+  answer         String?
+  createdAt      DateTime               @default(now())
+
+  @@index([userId])
+}
+
+model PoojaCatalog {
+  id                 String   @id // e.g. "maha-mrityunjaya"
+  nameEn             String
+  nameMr             String
+  nameHi             String?
+  nameGu             String?
+  category           String   // "shanti", "mahayajna", "samskara", "abhishek", "pitru"
+  categoryLabelEn    String
+  categoryLabelMr    String
+  categoryLabelHi    String
+  categoryLabelGu    String
+  descriptionEn      String
+  descriptionMr      String
+  descriptionHi      String?
+  descriptionGu      String?
+  longDescriptionEn  String
+  longDescriptionMr  String
+  duration           String
+  pandits            String
+  samagri            String
+  modesJson          String   // JSON string of string[] e.g. '["online", "ashram"]'
+  price              Float
+  priceLabel         String
+  image              String
+  lineage            String
+  benefitsJson       String   // JSON string of string[]
+  includedItemsJson  String   // JSON string of string[]
+  createdAt          DateTime @default(now())
+}
+
+model GurukulCourse {
+  id                     String   @id // e.g. "veda-moolam"
+  titleEn                String
+  titleMr                String
+  titleHi                String
+  titleGu                String?
+  category               String   // "residential", "weekend", "paurohitya", "online"
+  categoryLabelEn        String
+  categoryLabelMr        String?
+  categoryLabelHi        String?
+  categoryLabelGu        String?
+  duration               String
+  descriptionEn          String
+  descriptionMr          String
+  descriptionHi          String?
+  descriptionGu          String?
+  eligibility            String
+  seva                   String
+  status                 String
+  lessonsCount           Int      @default(0)
+  completedLessons       Int      @default(0)
+  acharya                String
+  syllabusHighlightsJson String   // JSON string of string[]
+  isFeaturedAudio        Boolean  @default(false)
+  createdAt              DateTime @default(now())
+}
+
+model GurukulSubmission {
+  id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  refNo           String   @unique // e.g. "#REC-7829-05"
+  mantraTitle     String
+  durationSeconds Int
+  status          String   @default("pending_review")
+  feedback        String?
+  score           String?
+  createdAt       DateTime @default(now())
+
+  @@index([userId])
+}
+
+model Event {
+  id            String              @id // e.g. "event-1"
+  dateDay       String
+  dateMonth     String
+  title         String
+  time          String
+  location      String
+  category      String
+  status        String
+  desc          String
+  createdAt     DateTime            @default(now())
+  registrations EventRegistration[]
+}
+
+model EventRegistration {
+  id        String   @id @default(cuid())
+  eventId   String
+  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  name      String
+  phone     String
+  attendees Int      @default(1)
+  status    String   @default("confirmed")
+  createdAt DateTime @default(now())
+
+  @@index([eventId])
+}
+
+model ContactInquiry {
+  id        String   @id @default(cuid())
+  name      String
+  phone     String
+  email     String?
+  subject   String
+  message   String
+  status    String   @default("new")
+  createdAt DateTime @default(now())
+}
+
+model Notification {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  titleEn       String
+  titleMr       String
+  titleHi       String?
+  titleGu       String?
+  timeEn        String
+  timeMr        String
+  timeHi        String?
+  timeGu        String?
+  messageEn     String
+  messageMr     String
+  messageHi     String?
+  messageGu     String?
+  unread        Boolean  @default(true)
+  actionModule  String
+  actionTextEn  String
+  actionTextMr  String
+  actionTextHi  String?
+  actionTextGu  String?
+  icon          String
+  createdAt     DateTime @default(now())
+
+  @@index([userId, unread])
+}
+
+model OtpSession {
+  id        String   @id @default(cuid())
+  phone     String
+  code      String   // Hashed or numeric code
+  expiresAt DateTime
+  attempts  Int      @default(0)
+  verified  Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([phone])
+}

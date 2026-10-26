@@ -1,0 +1,6 @@
+{
+  "name": "Chaitanya Ved Pratishthan | चैतन्य वेद प्रतिष्ठान",
+  "description": "Official portal for Chaitanya Ved Pratishthan: Authentic Vedic Research, Jyotish Shastra, Sacred Yadnik Poojas, Gurukul Education, and Devotee Sanctum.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
